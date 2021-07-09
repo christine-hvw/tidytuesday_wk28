@@ -113,7 +113,7 @@ ggraph(layout) +
         plot.subtitle = element_textbox_simple(size = 10, 
                                                family = "Josefin Sans Medium", 
                                                color = "gray90",
-                                               margin = margin(4,100,10,4, "mm")),
+                                               margin = margin(0,100,10,4, "mm")),
         plot.caption = element_text(family = "Josefin Sans Medium",
                                     face = "plain",
                                     color = "black",
