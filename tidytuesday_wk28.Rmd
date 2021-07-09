@@ -1,5 +1,6 @@
 ---
 title: "Tidy Tuesday - Week 28"
+subtitle : "Independence Days"
 author: "Christine Hedde - von Westernhagen"
 date: "`r format(Sys.time(), '%Y-%m-%d')`"
 output: 
@@ -71,7 +72,7 @@ net <- as_tbl_graph(data, directed = TRUE) %>%
 
 # Plotting
 
-```{r plt, fig.width=12, fig.height=12}
+```{r plt, fig.width=9, fig.height=12}
 
 set.seed(907)
 
@@ -124,7 +125,7 @@ ggraph(layout) +
 
 ```{r save, eval=FALSE, include=FALSE}
 ggsave(filename = "plot.png", dpi = 800,
-       width = unit(12, "in"), height = unit(12, "in"))
+       width = unit(9, "in"), height = unit(12, "in"))
 ```
 
 
