@@ -25,6 +25,8 @@ library(ggtext)
 # then load with:
 extrafont::loadfonts(device = "win", quiet = TRUE)
 
+# Set seed to fix layout
+set.seed(910)
 ```
 
 # Goal
@@ -72,9 +74,10 @@ net <- as_tbl_graph(data, directed = TRUE) %>%
 
 # Plotting
 
-```{r plt, fig.width=9, fig.height=12}
+```{r plt, fig.width=9, fig.height=12, fig.alt=fig.alt, fig.cap="Network of independence days"}
 
-set.seed(907)
+fig.alt <- "The plot builds on a collection of independence day celebrations around the world. The relationship between celebrating countries and former occupants is shown in a network layout. The relationships are mostly star-shaped around major colonizers like the UK, France, or Spain. Some countries are even celebrating multiple indepence days, others are both celebrators as well as former occupants."
+
 
 layout <- create_layout(net, "fr", niter = 10000)
 
