@@ -1,0 +1,130 @@
+---
+title: "Tidy Tuesday - Week 28"
+author: "Christine Hedde - von Westernhagen"
+date: "`r format(Sys.time(), '%Y-%m-%d')`"
+output: 
+  html_document:
+    theme: paper
+    highlight: pygment
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, 
+                      fig.align = "center",
+                      fig.pos = "H")
+
+library(tidyverse)
+library(here)
+library(tidygraph)
+library(ggraph)
+library(ggtext)
+
+# Install Josefin Sans and Roboto if necessayry
+# then load with:
+extrafont::loadfonts(device = "win", quiet = TRUE)
+
+```
+
+# Goal
+
+Make a network plot indicating the independence of a country from its occupator as a directed graph (occupated -> occupator).
+
+# Data Prep
+
+```{r data_prep, message=FALSE}
+
+data_raw <- readr::read_csv(
+    'https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-07-06/holidays.csv')
+
+
+data <- data_raw %>% 
+  # remove observations with no occupator
+  filter(!is.na(independence_from)) %>% 
+  # remove what seems to be footnotes (?)
+  mutate(independence_from = str_remove_all(independence_from, "\\[[0-9]+?\\]") %>% 
+           str_wrap(., 20),
+         period = cut(year, c(1500, 1600, 1700, seq(1800, 1899, 20), 
+                              seq(1900, 1999, 20), 2000, 2020), dig.lab = 4) %>% 
+           str_remove_all(., "\\(|\\]") %>% 
+           str_replace_all(., ",", "-"),
+         independence_from = ifelse(str_detect(independence_from, "^Allied.+"),
+                                    "Allied occupying powers",
+                                    independence_from)) %>% 
+  # rename for tidygraph
+  rename(from = country, to = independence_from)
+
+net <- as_tbl_graph(data, directed = TRUE) %>% 
+  activate(edges) %>% 
+  select(from, to, year, period) %>% 
+  activate(nodes) %>% 
+  # Optional transformations, not used in plot
+  mutate(in_deg = centrality_degree(mode = "in"),
+         occupation = ifelse(name %in% data$to, "occupator", "occupated"),
+         occupator = ifelse(occupation == "occupator", name, NA),
+         both = ifelse(name %in% data$to & name %in% data$from, name, NA),
+         in_deg10 = ifelse(in_deg > 10, glue::glue("{name} [{in_deg}]"), NA),
+         in_deg5 = ifelse(in_deg > 5, glue::glue("{name} [{in_deg}]"), NA),
+         )
+
+```
+
+# Plotting
+
+```{r plt, fig.width=12, fig.height=12}
+
+set.seed(907)
+
+layout <- create_layout(net, "fr", niter = 10000)
+
+ggraph(layout) +
+  geom_edge_fan(aes(color = stat(index), width = stat(index)),
+                strength = 2.5,
+                start_cap = circle(1, 'mm'),
+                end_cap = circle(3, 'mm'),
+                lineend = "round") +
+  scale_edge_color_viridis(option = "magma") +
+  scale_edge_width(range = c(0.4, 1.7), guide = "none") +
+  geom_node_text(aes(label = name), 
+                 family = "Roboto Medium",
+                 color = "white", size = 2,
+                 alpha = .9) +
+  coord_fixed() +
+  guides(edge_colour = guide_edge_colorbar(
+    title = "Country celebrating independence \u2192 former occupant",
+    title.position = "bottom",  
+    barheight = .5, barwidth = 19,
+    ticks = FALSE, label = FALSE)) +
+  labs(title = "International Independence Days",
+       subtitle = "The plot builds on a collection of independence day celebrations around the world. The relationship between celebrating countries and former occupants is mostly star-shaped around major colonizers like the UK, France, or Spain. Some countries are even celebrating multiple indepence days, others are both celebrators as well as former occupants.",
+       caption = "Data source: Wikipedia, provided by Isabella Velásquez | Plot: @christinehvw") +
+  theme_graph() +
+  theme(plot.background = element_rect(fill = "gray40"),
+        plot.margin = unit(c(0,4,1,4), "mm"),
+        legend.position = "bottom",
+        text = element_text(family = "Josefin Sans Medium", 
+                            color = "gray90"),
+        plot.title = element_textbox_simple(size = 20, 
+                                            family = "Josefin Sans Medium", 
+                                            color = "gray90",
+                                            fill = "gray20",
+                                            margin = margin(4,4,4,4, "mm")),
+        plot.subtitle = element_textbox_simple(size = 10, 
+                                               family = "Josefin Sans Medium", 
+                                               color = "gray90",
+                                               margin = margin(4,100,10,4, "mm")),
+        plot.caption = element_text(family = "Josefin Sans Medium",
+                                    face = "plain",
+                                    color = "black",
+                                    hjust = 0.5,
+                                    margin = margin(8,0,0,0, "mm")))
+
+```
+
+
+```{r save, eval=FALSE, include=FALSE}
+ggsave(filename = "plot.png", dpi = 800,
+       width = unit(12, "in"), height = unit(12, "in"))
+```
+
+
